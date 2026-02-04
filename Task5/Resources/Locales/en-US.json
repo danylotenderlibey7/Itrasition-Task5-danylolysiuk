@@ -1,0 +1,20 @@
+{
+  "adjectives": [
+    "Dark", "Sweet", "Wild", "Fast", "Silent", "Lonely", "Golden", "Cold",
+    "Bright", "Hot", "White", "Red", "Empty", "Falling", "Electric", "Hidden",
+    "Broken", "Burning", "Lost", "Midnight"
+  ],
+  "nouns": [
+    "Sun", "Rain", "Road", "Shadow", "Sound", "Heart", "Night", "Fire",
+    "Train", "Wind", "Morning", "Ocean", "City", "Dream", "Voice", "Storm",
+    "Echo", "Light", "Silence", "Memory"
+  ],
+  "genres": [
+    "Pop", "Rock", "Hip-Hop", "Folk", "EDM", "Indie", "Classical", "Metal",
+    "Jazz", "Techno", "Rap", "Retro", "Ambient", "R&B", "Blues"
+  ],
+  "albumTemplates": [
+    "{Adjective} {Noun}", "The {Noun} Within", "Songs of {Noun}", "{Noun} & {Noun}",
+    "After the {Noun}", "Into the {Adjective} {Noun}", "Beyond the {Noun}", "Echoes of {Noun}"
+  ]
+}
