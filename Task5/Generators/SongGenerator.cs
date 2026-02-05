@@ -1,4 +1,5 @@
 ﻿using Task5.DataProviders;
+using Task5.Determinism;
 using Task5.Generators.Interfaces;
 using Task5.Models;
 
@@ -16,8 +17,8 @@ namespace Task5.Generators
             {
                 int index = startIndex + i + 1;
 
-                int recordSeed = MakeSeed(request.Seed, index, locale);
-                var recordRnd = new Random(recordSeed);
+                int detSeed = DeterministicSeed.MakeDetSeed(request.Seed, index, locale);
+                var recordRnd = new Random(detSeed);
                 var provider = new BogusDataProvider(locale, recordRnd);
 
                 var song = new Song
@@ -51,18 +52,5 @@ namespace Task5.Generators
 
             return Math.Clamp(baseLikes, 0, 10);
         }
-
-        private static int MakeSeed(ulong seed, int index, string locale)
-        {
-            unchecked
-            {
-                int h = (int)(seed ^ (seed >> 32));
-                h = (h * 397) ^ index;
-                h = (h * 397) ^ (locale?.GetHashCode() ?? 0);
-                return h & 0x7FFFFFFF;
-            }
-        }
-
     }
-
 }

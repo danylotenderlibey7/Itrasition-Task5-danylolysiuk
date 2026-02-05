@@ -1,5 +1,6 @@
 ﻿using NAudio.Wave;
 using Task5.Audio.Interfaces;
+using Task5.Determinism;
 
 namespace Task5.Audio
 {
@@ -9,13 +10,13 @@ namespace Task5.Audio
         {
             locale = string.IsNullOrWhiteSpace(locale) ? "en-US" : locale.Trim();
 
-            if (!TryParseSongId(songId, out ulong seed, out int index) || index <= 0)
+            if (!SongId.TryParseSongId(songId, out ulong seed, out int index) || index <= 0)
                 throw new ArgumentException("Invalid songId. Expected <seed>-<index>", nameof(songId));
 
             using var memoryStream = new MemoryStream();
             var format = new WaveFormat(44100, 16, 1);
 
-            int detSeed = MakeDetSeed(seed, index, locale);
+            int detSeed = DeterministicSeed.MakeDetSeed(seed, index, locale);
             var rnd = new Random(detSeed);
 
             using (var writer = new WaveFileWriter(memoryStream,format))
@@ -51,29 +52,6 @@ namespace Task5.Audio
             }
 
             return memoryStream.ToArray();
-        }
-        private static bool TryParseSongId(string songId, out ulong seed, out int index)
-        {
-            seed = default;
-            index = default;
-
-            var parts = songId.Split('-', 2);
-            if (parts.Length != 2) return false;
-
-            return ulong.TryParse(parts[0], out seed)
-                && int.TryParse(parts[1], out index);
-        }
-        private static int MakeDetSeed(ulong seed, int index, string locale)
-        {
-            unchecked
-            {
-                int h = 17;
-                h = h * 31 + seed.GetHashCode();
-                h = h * 31 + index;
-                foreach (var c in locale)
-                    h = h * 31 + c;
-                return h & 0x7FFFFFFF;
-            }
         }
     }
 }
