@@ -34,18 +34,20 @@ namespace Task5.Covers
 
             using var image = new Image<Rgba32>(W, H);
             ApplyRandomBackground(image, rnd);
+            var baseDir = AppContext.BaseDirectory;
 
             string[] fontPaths =
             {
-                "Resources/Fonts/PlaypenSans-Regular.ttf",
-                "Resources/Fonts/RobotoSlab-Medium.ttf",
-                "Resources/Fonts/BadScript-Regular.ttf",
-                "Resources/Fonts/Kurale-Regular.ttf",
-                "Resources/Fonts/MontserratAlternates-Regular.ttf",
-                "Resources/Fonts/Pacifico-Regular.ttf",
-                "Resources/Fonts/PlayfairDisplay-VariableFont_wght.ttf",
-                "Resources/Fonts/RubikDoodleShadow-Regular.ttf"
+                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "PlaypenSans-Regular.ttf"),
+                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "RobotoSlab-Medium.ttf"),
+                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "BadScript-Regular.ttf"),
+                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "Kurale-Regular.ttf"),
+                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "MontserratAlternates-Regular.ttf"),
+                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "Pacifico-Regular.ttf"),
+                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "PlayfairDisplay-VariableFont_wght.ttf"),
+                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "RubikDoodleShadow-Regular.ttf"),
             };
+
 
             var fontCollection = new FontCollection();
             FontFamily family = fontCollection.Add(fontPaths[rnd.Next(fontPaths.Length)]);
