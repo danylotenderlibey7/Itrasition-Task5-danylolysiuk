@@ -237,6 +237,7 @@ export default function ControlsBar({
         border: "1px solid #e5e7eb",
         background: "#fff",
         borderRadius: 10,
+        color: "#111827",
         height: 38,
         padding: "0 12px",
         cursor: "pointer",
@@ -246,6 +247,7 @@ export default function ControlsBar({
         border: "1px solid #e5e7eb",
         background: "#fff",
         borderRadius: 10,
+        color: "#111827",
         height: 38,
         padding: "0 10px",
         cursor: "pointer",
@@ -369,7 +371,7 @@ export default function ControlsBar({
             style={{
               width: "100%",
               cursor: "pointer",
-              accentColor: "#a855f7",
+              accentColor: "#1d4ed8",
               marginTop: 6,
             }}
           />
