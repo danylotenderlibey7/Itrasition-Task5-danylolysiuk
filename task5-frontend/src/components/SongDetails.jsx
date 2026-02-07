@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ThumbsUp, Pause, Play, Volume2 } from "lucide-react";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 
 function formatTime(sec) {
   if (!Number.isFinite(sec) || sec < 0) return "0:00";
@@ -9,9 +10,11 @@ function formatTime(sec) {
 }
 
 export default function SongDetails({ song, locale }) {
+  const isMobile = useMediaQuery("(max-width: 640px)");
+
   const coverUrl = `/api/songs/${song.id}/cover?locale=${locale}`;
   const audioUrl = `/api/songs/${song.id}/preview?locale=${locale}`;
-  
+
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -51,35 +54,40 @@ export default function SongDetails({ song, locale }) {
 
   const progress = duration ? Math.round((current / duration) * 1000) : 0;
 
+  const coverSize = isMobile ? "100%" : 220;
+
   return (
     <div
       style={{
         background: "#fff",
         border: "1px solid #e6e8ec",
         borderRadius: 10,
-        padding: 14,
+        padding: isMobile ? 12 : 14,
       }}
     >
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-        <div style={{ width: 220, flex: "0 0 220px" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 16,
+          alignItems: "flex-start",
+          flexDirection: isMobile ? "column" : "row",
+        }}
+      >
+        <div style={{ width: isMobile ? "100%" : 220, flex: isMobile ? "0 0 auto" : "0 0 220px" }}>
           <img
             src={coverUrl}
             alt={`${song.albumTitle} cover`}
             style={{
-              width: 220,
-              height: 220,
+              width: coverSize,
+              height: isMobile ? "auto" : 220,
+              aspectRatio: isMobile ? "1 / 1" : undefined,
               objectFit: "cover",
               borderRadius: 8,
               display: "block",
             }}
           />
-          <div
-            style={{
-              marginTop: 10,
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
+
+          <div style={{ marginTop: 10, display: "flex", justifyContent: "center" }}>
             <div
               style={{
                 display: "inline-flex",
@@ -102,22 +110,23 @@ export default function SongDetails({ song, locale }) {
           </div>
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
           <div
             style={{
-              fontSize: 25,
+              fontSize: isMobile ? 20 : 25,
               fontWeight: 800,
               lineHeight: 1.15,
               letterSpacing: "-0.01em",
               color: "#111827",
+              wordBreak: "break-word",
             }}
           >
             {song.songTitle}
           </div>
 
-          <div style={{ marginTop: 12, color: "#6b7280" }}>
-            from <strong style={{ color: "#111827" }}>{song.albumTitle}</strong>{" "}
-            by <strong style={{ color: "#111827" }}>{song.artist}</strong>
+          <div style={{ marginTop: 10, color: "#6b7280" }}>
+            from <strong style={{ color: "#111827" }}>{song.albumTitle}</strong> by{" "}
+            <strong style={{ color: "#111827" }}>{song.artist}</strong>
           </div>
 
           <audio
@@ -138,6 +147,7 @@ export default function SongDetails({ song, locale }) {
               display: "flex",
               alignItems: "center",
               gap: 10,
+              flexWrap: "wrap",
             }}
           >
             <button
@@ -145,8 +155,8 @@ export default function SongDetails({ song, locale }) {
               onClick={togglePlay}
               aria-label={isPlaying ? "Pause" : "Play"}
               style={{
-                width: 28,
-                height: 28,
+                width: 34,
+                height: 34,
                 borderRadius: "50%",
                 border: "none",
                 background: "#2563eb",
@@ -157,9 +167,10 @@ export default function SongDetails({ song, locale }) {
                 flex: "0 0 auto",
                 padding: 0,
                 lineHeight: 1,
+                touchAction: "manipulation",
               }}
             >
-              {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
             </button>
 
             <div
@@ -173,7 +184,7 @@ export default function SongDetails({ song, locale }) {
                 userSelect: "none",
               }}
             >
-              <Volume2 size={14} />
+              <Volume2 size={16} />
             </div>
 
             <input
@@ -183,7 +194,7 @@ export default function SongDetails({ song, locale }) {
               value={progress}
               onChange={onSeek}
               style={{
-                flex: 1,
+                flex: "1 1 220px",
                 height: 4,
                 accentColor: "#9ca3af",
                 cursor: "pointer",
@@ -205,10 +216,9 @@ export default function SongDetails({ song, locale }) {
             </div>
           </div>
 
-          <div style={{ marginTop: 12, fontStyle: "italic" }}>
+          <div style={{ marginTop: 12, fontStyle: "italic", wordBreak: "break-word" }}>
             {song.review}
           </div>
-
         </div>
       </div>
     </div>
