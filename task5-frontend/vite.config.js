@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://localhost:7296",
+        target: "https://task5-danyloly­siuk-h6btabfvhzaub9et.canadacentral-01.azurewebsites.net",
         changeOrigin: true,
         secure: false,
       },

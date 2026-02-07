@@ -92,10 +92,8 @@ export default function SongsGallery({ seed, locale, likesAvg, pageSize = 20 }) 
         {gallerySongs.map((song, index) => {
           const isLast = index === gallerySongs.length - 1;
 
-          const coverUrl = `https://localhost:7296/api/songs/${song.id}/cover?locale=${encodeURIComponent(
-            locale
-          )}`;
-
+          const coverUrl = `/api/songs/${song.id}/cover?locale=${encodeURIComponent(locale)}`;
+          
           return (
             <div
               key={song.id}

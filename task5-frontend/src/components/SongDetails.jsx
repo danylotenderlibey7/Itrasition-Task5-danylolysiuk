@@ -9,9 +9,9 @@ function formatTime(sec) {
 }
 
 export default function SongDetails({ song, locale }) {
-  const coverUrl = `https://localhost:7296/api/songs/${song.id}/cover?locale=${locale}`;
-  const audioUrl = `https://localhost:7296/api/songs/${song.id}/preview?locale=${locale}`;
-
+  const coverUrl = `/api/songs/${song.id}/cover?locale=${locale}`;
+  const audioUrl = `/api/songs/${song.id}/preview?locale=${locale}`;
+  
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
