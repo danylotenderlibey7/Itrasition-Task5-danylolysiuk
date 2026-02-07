@@ -39,7 +39,12 @@ namespace Task5.Covers
             {
                 "Resources/Fonts/PlaypenSans-Regular.ttf",
                 "Resources/Fonts/RobotoSlab-Medium.ttf",
-                "Resources/Fonts/PlaywriteNZBasicGuides-Regular.ttf"
+                "Resources/Fonts/BadScript-Regular.ttf",
+                "Resources/Fonts/Kurale-Regular.ttf",
+                "Resources/Fonts/MontserratAlternates-Regular.ttf",
+                "Resources/Fonts/Pacifico-Regular.ttf",
+                "Resources/Fonts/PlayfairDisplay-VariableFont_wght.ttf",
+                "Resources/Fonts/RubikDoodleShadow-Regular.ttf"
             };
 
             var fontCollection = new FontCollection();
@@ -84,7 +89,6 @@ namespace Task5.Covers
             return items[0].id;
         }
 
-        // Генерируем фон: случайные градиенты, двухцветные или однотонные заливки.
         private static void ApplyRandomBackground(Image<Rgba32> image, Random rnd)
         {
             var palette = new[]
@@ -96,7 +100,6 @@ namespace Task5.Covers
                 "F97316","D97706","059669","065F46","14B8A6","0891B2"
             };
 
-            // случайно выбираем до 3 разных цветов
             var c1 = Color.ParseHex(palette[rnd.Next(palette.Length)]);
             var c2 = Color.ParseHex(palette[rnd.Next(palette.Length)]);
             var c3 = Color.ParseHex(palette[rnd.Next(palette.Length)]);
@@ -110,7 +113,6 @@ namespace Task5.Covers
                 {
                     case 0:
                         {
-                            // линейный градиент
                             var start = new PointF(rnd.NextSingle() * W, rnd.NextSingle() * H);
                             var end = new PointF(rnd.NextSingle() * W, rnd.NextSingle() * H);
                             ctx.Fill(new LinearGradientBrush(
@@ -124,13 +126,12 @@ namespace Task5.Covers
                         }
                     case 1:
                         {
-                            // радиальный градиент
                             var center = new PointF(rnd.NextSingle() * W, rnd.NextSingle() * H);
                             float radius = (float)(Math.Min(W, H) * (0.4 + rnd.NextDouble() * 0.6));
                             ctx.Fill(new RadialGradientBrush(
                             center,
                             radius,
-                            GradientRepetitionMode.None,  // <- режим повторения
+                            GradientRepetitionMode.None,
                             new ColorStop(0f, c1),
                             new ColorStop(0.7f, c2),
                             new ColorStop(1f, c3)
@@ -140,16 +141,13 @@ namespace Task5.Covers
                         }
                     case 2:
                         {
-                            // двухцветный фон: верх-низ или лево-право
                             if (rnd.Next(0, 2) == 0)
                             {
-                                // лево-право
                                 ctx.Fill(c1, new RectangleF(0, 0, W * 0.5f, H));
                                 ctx.Fill(c2, new RectangleF(W * 0.5f, 0, W * 0.5f, H));
                             }
                             else
                             {
-                                // верх-низ
                                 ctx.Fill(c1, new RectangleF(0, 0, W, H * 0.5f));
                                 ctx.Fill(c2, new RectangleF(0, H * 0.5f, W, H * 0.5f));
                             }
@@ -157,13 +155,11 @@ namespace Task5.Covers
                         }
                     case 3:
                         {
-                            // однотонный фон
                             ctx.Fill(c1);
                             break;
                         }
                     default:
                         {
-                            // диагональный градиент с двумя цветами
                             ctx.Fill(new LinearGradientBrush(
                                 new PointF(0, 0),
                                 new PointF(W, H),
@@ -370,13 +366,11 @@ namespace Task5.Covers
             ctx.DrawText(opt, candidate, color);
         }
 
-        // Обрезаем строки без добавления "…", чтобы уместиться в allowedHeight.
         private static string TruncateToFitHeight(string text, RichTextOptions opt, float maxHeight)
         {
             if (TextMeasurer.MeasureSize(text, opt).Height <= maxHeight)
                 return text;
 
-            // если текст не помещается, ищем подходящую длину
             int lo = 0;
             int hi = text.Length;
             while (lo + 1 < hi)

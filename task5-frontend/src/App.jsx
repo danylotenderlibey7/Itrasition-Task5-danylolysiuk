@@ -28,7 +28,48 @@ useEffect(() => {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>Task5 Songs</h1>
+      <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 24,
+        padding: "28px 16px 20px",
+      }}
+    >
+      <div
+        style={{
+          flex: 1,
+          height: 1,
+          background: "linear-gradient(to right, transparent, #e5e7eb)",
+          maxWidth: 240,
+        }}
+      />
+
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 42,
+          fontWeight: 800,
+          letterSpacing: "-0.02em",
+          color: "#111827",
+          whiteSpace: "nowrap",
+        }}
+      >
+        Task5 Songs
+      </h1>
+
+      <div
+        style={{
+          flex: 1,
+          height: 1,
+          background: "linear-gradient(to left, transparent, #e5e7eb)",
+          maxWidth: 240,
+        }}
+      />
+    </div>
+
+
       <ControlsBar page={page} setPage={setPage} locale={locale} setLocale={setLocale} seed={seed} setSeed={setSeed} 
       likesAvg={likesAvg} setLikesAvg={setLikesAvg} setExpandedId={setExpandedId} 
       viewMode={viewMode} setViewMode={setViewMode}/>

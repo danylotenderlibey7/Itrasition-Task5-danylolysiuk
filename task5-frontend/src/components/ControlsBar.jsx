@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDown, RefreshCw, LayoutList, LayoutGrid } from "lucide-react";
+import { ChevronDown, RefreshCw, LayoutList, LayoutGrid, ThumbsUp} from "lucide-react";
 
 export default function ControlsBar({
   page,
@@ -25,6 +25,15 @@ export default function ControlsBar({
     resetTableState();
   };
 
+  const [likesDraft, setLikesDraft] = React.useState(likesAvg);
+  React.useEffect(() => {
+        setLikesDraft(likesAvg);
+      }, [likesAvg]);
+
+  const likesText = Math.max(0, Math.min(10, Number(likesDraft) || 0)).toFixed(1);
+  const [isLocaleOpen, setIsLocaleOpen] = React.useState(false);
+  const localeRef = React.useRef(null);
+
   const BAR = {
     display: "grid",
     gridTemplateColumns: "1fr auto auto",
@@ -48,7 +57,7 @@ export default function ControlsBar({
     borderRadius: 10,
     boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
     padding: "10px 12px",
-    height: 56,
+    height: 72,
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
@@ -70,17 +79,21 @@ export default function ControlsBar({
   };
 
   const SELECT = {
-    border: "none",
-    outline: "none",
-    background: "transparent",
-    fontSize: 14,
-    fontWeight: 700,
-    color: "#111827",
-    width: "100%",
-    padding: 0,
-    margin: 0,
-    appearance: "none",
-  };
+  width: "100%",
+  border: "1px solid #e5e7eb",
+  borderRadius: 10,
+  background: "#fff",
+  padding: "10px 34px 10px 12px",
+  fontSize: 14,
+  fontWeight: 700,
+  color: "#111827",
+  outline: "none",
+  appearance: "none",
+  WebkitAppearance: "none",
+  MozAppearance: "none",
+  lineHeight: "20px",
+};
+
 
   const INPUT = {
     border: "none",
@@ -96,8 +109,8 @@ export default function ControlsBar({
   };
 
   const ICON_BTN = {
-    width: 34,
-    height: 34,
+    width: 48,
+    height: 48,
     borderRadius: 10,
     border: "none",
     background: "transparent",
@@ -114,11 +127,13 @@ export default function ControlsBar({
     overflow: "hidden",
     boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
     background: "#ffffff",
+    height: 56,
+    alignItems: "center",
   };
 
   const VIEW_BTN = (active, left) => ({
-    width: 44,
-    height: 40,
+    width: 56,
+    height: 56,
     border: "none",
     cursor: "pointer",
     display: "grid",
@@ -128,47 +143,66 @@ export default function ControlsBar({
     borderRight: left ? "1px solid #e5e7eb" : "none",
   });
 
-  const likesBox = { ...FIELD, width: 260 };
+  const likesBox = { ...FIELD, width: 260, justifyContent: "flex-start", paddingBottom: 12};
 
   const DotRow = ({ value }) => {
     const v = Math.max(0, Math.min(10, value));
     return (
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 0,
-          width: "100%",
-          padding: "0 2px",
-          marginTop: 2,
-          marginBottom: 2,
-        }}
-      >
-        {Array.from({ length: 11 }).map((_, i) => {
-          const isActive = Math.round(v) === i;
-          return (
-            <div
-              key={i}
-              style={{
-                flex: "1 1 0",
-                display: "flex",
-                justifyContent: "center",
-              }}
-            >
-              <span
-                style={{
-                  width: isActive ? 10 : 4,
-                  height: isActive ? 10 : 4,
-                  borderRadius: 999,
-                  background: isActive ? "#2563eb" : "#d1d5db",
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        fontSize: 11,
+        color: "#6b7280",
+        padding: "0 2px",
+        marginTop: 6,
+        userSelect: "none",
+        lineHeight: "12px",
+        height: 12,
+      }}
+    >
+      {Array.from({ length: 11 }).map((_, i) => (
+        <div key={i} style={{ width: 18, textAlign: "center" }}>
+          {i}
+        </div>
+      ))}
+    </div>
+
     );
   };
+    const MARKS = {
+      display: "flex",
+      justifyContent: "space-between",
+      fontSize: 11,
+      color: "#6b7280",
+      userSelect: "none",
+      marginTop: 6,
+      padding: "0 2px",
+      lineHeight: "12px",
+      height: 12,
+    };
+
+    const MARK = {
+      width: 18,
+      textAlign: "center",
+    };
+    
+    const DROPDOWN_BTN = {
+      position: "relative",
+      width: "100%",
+      height: 40,
+      border: "1px solid #e5e7eb",
+      borderRadius: 10,
+      background: "#fff",
+      padding: "0 36px 0 12px",
+      fontSize: 14,
+      fontWeight: 700,
+      color: "#111827",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+    };
 
   return (
     <div style={BAR}>
@@ -182,24 +216,26 @@ export default function ControlsBar({
                 setLocale(e.target.value);
                 resetTableState();
               }}
-              style={{ ...SELECT, paddingRight: 18 }}
+              style={{ ...SELECT}}
             >
               <option value="en-US">English (US)</option>
               <option value="uk-UA">Ukrainian (UA)</option>
             </select>
 
             <span
-              style={{
-                position: "absolute",
-                right: 0,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "#6b7280",
-                pointerEvents: "none",
-              }}
-            >
-              <ChevronDown size={16} />
-            </span>
+            style={{
+              position: "absolute",
+              right: 10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "#6b7280",
+              pointerEvents: "none",
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            <ChevronDown size={16} />
+          </span>
           </div>
         </div>
 
@@ -236,27 +272,60 @@ export default function ControlsBar({
         </div>
 
         <div style={likesBox}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={LABEL}>Likes</div>
 
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "4px 8px",
+              border: "1px solid #e5e7eb",
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 800,
+              color: "#111827",
+              background: "#fff",
+            }}
+            title="Selected likes average"
+          >
+            <ThumbsUp size={14} />
+            <span>{likesText}</span>
+          </div>
+        </div>
           <DotRow value={likesAvg} />
 
           <input
-            type="range"
-            min="0"
-            max="10"
-            step="0.1"
-            value={likesAvg}
-            onChange={(e) => {
-              const num = Number(e.target.value);
-              setLikesAvg(num);
-              setExpandedId(null);
-            }}
-            style={{
-              width: "100%",
-              cursor: "pointer",
-              accentColor: "#2563eb",
-            }}
-          />
+          type="range"
+          min="0"
+          max="10"
+          step="0.1"
+          value={likesDraft}
+          onChange={(e) => {
+            const num = Number(e.target.value);
+            setLikesDraft(num);
+          }}
+          onMouseUp={() => {
+            setLikesAvg(likesDraft);
+            setExpandedId(null);
+          }}
+          onTouchEnd={() => {
+            setLikesAvg(likesDraft);
+            setExpandedId(null);
+          }}
+          onKeyUp={() => {
+            setLikesAvg(likesDraft);
+            setExpandedId(null);
+          }}
+          style={{
+            width: "100%",
+            cursor: "pointer",
+            accentColor: "#a855f7",   // фиолетовый как на скрине
+            marginTop: 6,
+          }}
+        />
+
         </div>
 
         {viewMode === "table" && (

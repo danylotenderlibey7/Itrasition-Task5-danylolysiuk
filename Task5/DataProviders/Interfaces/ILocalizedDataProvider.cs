@@ -6,5 +6,7 @@
         string GetArtistName();
         string GetAlbumTitle();
         string GetGenre();
+
+        string GetReview(string songTitle, string artistName, string albumTitle, string genre);
     }
 }

@@ -2,6 +2,7 @@
 using Task5.Determinism;
 using Task5.Generators.Interfaces;
 using Task5.Models;
+using static Bogus.DataSets.Name;
 
 namespace Task5.Generators
 {
@@ -21,15 +22,23 @@ namespace Task5.Generators
                 var recordRnd = new Random(detSeed);
                 var provider = new BogusDataProvider(locale, recordRnd);
 
+                var likesRnd = new Random(HashCode.Combine(detSeed, (int)Math.Round(request.LikesAvg * 1000)));
+
+                var songTitle = provider.GetSongTitle();
+                var artistName = provider.GetArtistName();
+                var albumTitle = provider.GetAlbumTitle();
+                var genre = provider.GetGenre();
+
                 var song = new Song
                 {
                     Id = $"{request.Seed}-{index}",
                     Index = index,
-                    SongTitle = provider.GetSongTitle(),
-                    Artist = provider.GetArtistName(),
-                    AlbumTitle = provider.GetAlbumTitle(),
-                    Genre = provider.GetGenre(),
-                    Likes = GenerateLikes(request.LikesAvg, recordRnd)
+                    SongTitle = songTitle,
+                    Artist = artistName,
+                    AlbumTitle = albumTitle,
+                    Genre = genre,
+                    Likes = GenerateLikes(request.LikesAvg, likesRnd),
+                    Review = provider.GetReview(songTitle, artistName, albumTitle, genre)
                 };
 
                 songs.Add(song);

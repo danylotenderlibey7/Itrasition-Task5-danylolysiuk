@@ -10,5 +10,6 @@
         public string? Genre { get; set; }
         public int Likes { get; set; }
 
+        public string Review { get; set; } = string.Empty;
     }
 }

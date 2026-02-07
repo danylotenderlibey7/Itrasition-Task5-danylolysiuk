@@ -205,7 +205,10 @@ export default function SongDetails({ song, locale }) {
             </div>
           </div>
 
-          <div style={{ marginTop: 12, color: "#6b7280" }}>(Lyrics will be here)</div>
+          <div style={{ marginTop: 12, fontStyle: "italic" }}>
+            {song.review}
+          </div>
+
         </div>
       </div>
     </div>
