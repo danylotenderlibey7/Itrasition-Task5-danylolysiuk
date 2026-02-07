@@ -8,10 +8,34 @@ function formatTime(sec) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false
+  );
+
+  useEffect(() => {
+    const m = window.matchMedia(query);
+    const onChange = () => setMatches(m.matches);
+
+    if (m.addEventListener) m.addEventListener("change", onChange);
+    else m.addListener(onChange);
+
+    setMatches(m.matches);
+    return () => {
+      if (m.removeEventListener) m.removeEventListener("change", onChange);
+      else m.removeListener(onChange);
+    };
+  }, [query]);
+
+  return matches;
+}
+
 export default function SongDetails({ song, locale }) {
   const coverUrl = `/api/songs/${song.id}/cover?locale=${locale}`;
   const audioUrl = `/api/songs/${song.id}/preview?locale=${locale}`;
-  
+
+  const isMobile = useMediaQuery("(max-width: 640px)");
+
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -57,21 +81,45 @@ export default function SongDetails({ song, locale }) {
         background: "#fff",
         border: "1px solid #e6e8ec",
         borderRadius: 10,
-        padding: 14,
+        padding: isMobile ? 12 : 14, 
       }}
     >
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-        <div style={{ width: 220, flex: "0 0 220px" }}>
+      <div
+        style={
+          isMobile
+            ? { display: "flex", flexDirection: "column", gap: 12, alignItems: "stretch" }
+            : { display: "flex", gap: 16, alignItems: "flex-start" }
+        }
+      >
+        <div
+          style={
+            isMobile
+              ? { width: "100%", flex: "0 0 auto" }
+              : { width: 220, flex: "0 0 220px" }
+          }
+        >
           <img
             src={coverUrl}
             alt={`${song.albumTitle} cover`}
-            style={{
-              width: 220,
-              height: 220,
-              objectFit: "cover",
-              borderRadius: 8,
-              display: "block",
-            }}
+            style={
+              isMobile
+                ? {
+                    width: "100%",
+                    maxWidth: 420,
+                    aspectRatio: "1 / 1",
+                    objectFit: "cover",
+                    borderRadius: 8,
+                    display: "block",
+                    margin: "0 auto",
+                  }
+                : {
+                    width: 220,
+                    height: 220,
+                    objectFit: "cover",
+                    borderRadius: 8,
+                    display: "block",
+                  } 
+            }
           />
           <div
             style={{
@@ -90,7 +138,7 @@ export default function SongDetails({ song, locale }) {
                 background: "#2563eb",
                 color: "#fff",
                 fontSize: 12,
-                fontWeight: 600,
+                fontWeight: 500,
                 boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
                 userSelect: "none",
               }}
@@ -105,11 +153,12 @@ export default function SongDetails({ song, locale }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontSize: 25,
-              fontWeight: 800,
+              fontSize: isMobile ? 20 : 25, 
+              fontWeight: 400,
               lineHeight: 1.15,
               letterSpacing: "-0.01em",
               color: "#111827",
+              wordBreak: "break-word", 
             }}
           >
             {song.songTitle}
@@ -138,6 +187,7 @@ export default function SongDetails({ song, locale }) {
               display: "flex",
               alignItems: "center",
               gap: 10,
+              flexWrap: isMobile ? "wrap" : "nowrap",
             }}
           >
             <button
@@ -182,12 +232,22 @@ export default function SongDetails({ song, locale }) {
               max={1000}
               value={progress}
               onChange={onSeek}
-              style={{
-                flex: 1,
-                height: 4,
-                accentColor: "#9ca3af",
-                cursor: "pointer",
-              }}
+              style={
+                isMobile
+                  ? {
+                      flex: "1 1 100%",
+                      height: 4,
+                      accentColor: "#9ca3af",
+                      cursor: "pointer",
+                      minWidth: 0,
+                    }
+                  : {
+                      flex: 1,
+                      height: 4,
+                      accentColor: "#9ca3af",
+                      cursor: "pointer",
+                    }
+              }
             />
 
             <div
@@ -199,16 +259,16 @@ export default function SongDetails({ song, locale }) {
                 borderRadius: 999,
                 whiteSpace: "nowrap",
                 flex: "0 0 auto",
+                marginLeft: isMobile ? "auto" : 0,
               }}
             >
               {formatTime(duration)}
             </div>
           </div>
 
-          <div style={{ marginTop: 12, fontStyle: "italic" }}>
+          <div style={{ marginTop: 12, fontStyle: "italic", wordBreak: "break-word" }}>
             {song.review}
           </div>
-
         </div>
       </div>
     </div>

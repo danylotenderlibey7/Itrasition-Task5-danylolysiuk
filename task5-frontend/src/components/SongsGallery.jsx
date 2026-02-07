@@ -13,6 +13,7 @@ export default function SongsGallery({ seed, locale, likesAvg, pageSize = 20 }) 
   const observerRef = useRef(null);
 
   const [cols, setCols] = useState(4);
+  const [isMobile, setIsMobile] = useState(false);
 
   const ellipsis = useMemo(
     () => ({
@@ -26,15 +27,18 @@ export default function SongsGallery({ seed, locale, likesAvg, pageSize = 20 }) 
   useEffect(() => {
     const calcCols = () => {
       const w = window.innerWidth;
-      if (w < 640) return 1;
+      if (w < 640) return 2;
       if (w < 900) return 2;
       if (w < 1200) return 3;
       return 4;
     };
 
-    const onResize = () => setCols(calcCols());
-    onResize();
+    const onResize = () => {
+      setCols(calcCols());
+      setIsMobile(window.innerWidth < 640);
+    };
 
+    onResize();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -86,14 +90,16 @@ export default function SongsGallery({ seed, locale, likesAvg, pageSize = 20 }) 
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-          gap: 14,
+          gap: isMobile ? 10 : 14,
         }}
       >
         {gallerySongs.map((song, index) => {
           const isLast = index === gallerySongs.length - 1;
 
-          const coverUrl = `/api/songs/${song.id}/cover?locale=${encodeURIComponent(locale)}`;
-          
+          const coverUrl = `/api/songs/${song.id}/cover?locale=${encodeURIComponent(
+            locale
+          )}`;
+
           return (
             <div
               key={song.id}
@@ -116,17 +122,16 @@ export default function SongsGallery({ seed, locale, likesAvg, pageSize = 20 }) 
               }}
             >
               <img
-                src={coverUrl}
-                alt={song.songTitle}
-                style={{
-                  width: "100%",
-                  height: 360,
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-
-              <div style={{ padding: "10px 12px" }}>
+              src={coverUrl}
+              alt={song.songTitle}
+              style={{
+                width: "100%",
+                aspectRatio: "1 / 1",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+              <div style={{ padding: isMobile ? "10px 10px" : "10px 12px" }}>
                 <div
                   style={{
                     fontSize: 15,
@@ -158,12 +163,13 @@ export default function SongsGallery({ seed, locale, likesAvg, pageSize = 20 }) 
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
+                    flexWrap: isMobile ? "wrap" : "nowrap",
                   }}
                 >
                   <div
                     style={{
                       minWidth: 0,
-                      flex: 1,
+                      flex: "1 1 auto",
                       display: "flex",
                       alignItems: "center",
                       gap: 10,
@@ -175,12 +181,13 @@ export default function SongsGallery({ seed, locale, likesAvg, pageSize = 20 }) 
                       {song.genre}
                     </span>
 
-                    <span style={{ color: "#d1d5db" }}>•</span>
+                    {!isMobile && <span style={{ color: "#d1d5db" }}>•</span>}
 
                     <span
                       style={{
                         ...ellipsis,
-                        color: song.albumTitle === "Single" ? "#9ca3af" : "#6b7280",
+                        color:
+                          song.albumTitle === "Single" ? "#9ca3af" : "#6b7280",
                         fontWeight: song.albumTitle === "Single" ? 600 : 500,
                       }}
                       title={song.albumTitle}

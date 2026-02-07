@@ -1,5 +1,27 @@
 import React from "react";
-import { ChevronDown, RefreshCw, LayoutList, LayoutGrid, ThumbsUp} from "lucide-react";
+import { ChevronDown, RefreshCw, LayoutList, LayoutGrid, ThumbsUp } from "lucide-react";
+
+function useMediaQuery(query) {
+  const [matches, setMatches] = React.useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false
+  );
+
+  React.useEffect(() => {
+    const m = window.matchMedia(query);
+    const onChange = () => setMatches(m.matches);
+
+    if (m.addEventListener) m.addEventListener("change", onChange);
+    else m.addListener(onChange);
+
+    setMatches(m.matches);
+    return () => {
+      if (m.removeEventListener) m.removeEventListener("change", onChange);
+      else m.removeListener(onChange);
+    };
+  }, [query]);
+
+  return matches;
+}
 
 export default function ControlsBar({
   page,
@@ -27,12 +49,12 @@ export default function ControlsBar({
 
   const [likesDraft, setLikesDraft] = React.useState(likesAvg);
   React.useEffect(() => {
-        setLikesDraft(likesAvg);
-      }, [likesAvg]);
+    setLikesDraft(likesAvg);
+  }, [likesAvg]);
 
   const likesText = Math.max(0, Math.min(10, Number(likesDraft) || 0)).toFixed(1);
-  const [isLocaleOpen, setIsLocaleOpen] = React.useState(false);
-  const localeRef = React.useRef(null);
+
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   const BAR = {
     display: "grid",
@@ -79,21 +101,20 @@ export default function ControlsBar({
   };
 
   const SELECT = {
-  width: "100%",
-  border: "1px solid #e5e7eb",
-  borderRadius: 10,
-  background: "#fff",
-  padding: "10px 34px 10px 12px",
-  fontSize: 14,
-  fontWeight: 700,
-  color: "#111827",
-  outline: "none",
-  appearance: "none",
-  WebkitAppearance: "none",
-  MozAppearance: "none",
-  lineHeight: "20px",
-};
-
+    width: "100%",
+    border: "1px solid #e5e7eb",
+    borderRadius: 10,
+    background: "#fff",
+    padding: "10px 34px 10px 12px",
+    fontSize: 14,
+    fontWeight: 700,
+    color: "#111827",
+    outline: "none",
+    appearance: "none",
+    WebkitAppearance: "none",
+    MozAppearance: "none",
+    lineHeight: "20px",
+  };
 
   const INPUT = {
     border: "none",
@@ -143,71 +164,97 @@ export default function ControlsBar({
     borderRight: left ? "1px solid #e5e7eb" : "none",
   });
 
-  const likesBox = { ...FIELD, width: 260, justifyContent: "flex-start", paddingBottom: 12};
+  const likesBox = { ...FIELD, width: 260, justifyContent: "flex-start", paddingBottom: 12 };
 
   const DotRow = ({ value }) => {
     const v = Math.max(0, Math.min(10, value));
     return (
       <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        fontSize: 11,
-        color: "#6b7280",
-        padding: "0 2px",
-        marginTop: 6,
-        userSelect: "none",
-        lineHeight: "12px",
-        height: 12,
-      }}
-    >
-      {Array.from({ length: 11 }).map((_, i) => (
-        <div key={i} style={{ width: 18, textAlign: "center" }}>
-          {i}
-        </div>
-      ))}
-    </div>
-
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 11,
+          color: "#6b7280",
+          padding: "0 2px",
+          marginTop: 6,
+          userSelect: "none",
+          lineHeight: "12px",
+          height: 12,
+        }}
+      >
+        {Array.from({ length: 11 }).map((_, i) => (
+          <div key={i} style={{ width: 18, textAlign: "center" }}>
+            {i}
+          </div>
+        ))}
+      </div>
     );
   };
-    const MARKS = {
-      display: "flex",
-      justifyContent: "space-between",
-      fontSize: 11,
-      color: "#6b7280",
-      userSelect: "none",
-      marginTop: 6,
-      padding: "0 2px",
-      lineHeight: "12px",
-      height: 12,
-    };
 
-    const MARK = {
-      width: 18,
-      textAlign: "center",
-    };
-    
-    const DROPDOWN_BTN = {
-      position: "relative",
-      width: "100%",
-      height: 40,
-      border: "1px solid #e5e7eb",
-      borderRadius: 10,
-      background: "#fff",
-      padding: "0 36px 0 12px",
-      fontSize: 14,
-      fontWeight: 700,
-      color: "#111827",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-    };
+  const BAR_M = isMobile
+    ? {
+        ...BAR,
+        gridTemplateColumns: "1fr", 
+        gap: 12,
+        padding: "12px 12px",
+      }
+    : BAR;
+
+  const LEFT_M = isMobile
+    ? {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 12,
+        alignItems: "stretch",
+        minWidth: 0,
+      }
+    : LEFT;
+
+  const fieldFullRow = isMobile ? { gridColumn: "1 / -1" } : null;
+
+  const languageBox = isMobile ? { ...FIELD, width: "100%" } : { ...FIELD, width: 220 };
+  const seedBox = isMobile ? { ...FIELD, width: "100%" } : { ...FIELD, width: 200 };
+  const likesBoxM = isMobile ? { ...likesBox, width: "100%", ...fieldFullRow } : likesBox;
+
+  const VIEW_WRAP_M = isMobile
+    ? { ...VIEW_WRAP, width: "100%", justifyContent: "space-between" }
+    : VIEW_WRAP;
+
+  const VIEW_BTN_M = (active, left) =>
+    isMobile
+      ? {
+          ...VIEW_BTN(active, left),
+          width: "50%",
+        }
+      : VIEW_BTN(active, left);
+
+  const pagerBox = isMobile
+    ? { ...FIELD, width: "100%", ...fieldFullRow, height: 72 }
+    : { ...FIELD, width: 150 };
+
+  const pagerBtn = isMobile
+    ? {
+        border: "1px solid #e5e7eb",
+        background: "#fff",
+        borderRadius: 10,
+        height: 38,
+        padding: "0 12px",
+        cursor: "pointer",
+        flex: 1,
+      }
+    : {
+        border: "1px solid #e5e7eb",
+        background: "#fff",
+        borderRadius: 10,
+        height: 38,
+        padding: "0 10px",
+        cursor: "pointer",
+      };
 
   return (
-    <div style={BAR}>
-      <div style={LEFT}>
-        <div style={{ ...FIELD, width: 220 }}>
+    <div style={BAR_M}>
+      <div style={LEFT_M}>
+        <div style={languageBox}>
           <div style={LABEL}>Language</div>
           <div style={{ position: "relative" }}>
             <select
@@ -216,30 +263,30 @@ export default function ControlsBar({
                 setLocale(e.target.value);
                 resetTableState();
               }}
-              style={{ ...SELECT}}
+              style={{ ...SELECT }}
             >
               <option value="en-US">English (US)</option>
               <option value="uk-UA">Ukrainian (UA)</option>
             </select>
 
             <span
-            style={{
-              position: "absolute",
-              right: 10,
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#6b7280",
-              pointerEvents: "none",
-              display: "grid",
-              placeItems: "center",
-            }}
-          >
-            <ChevronDown size={16} />
-          </span>
+              style={{
+                position: "absolute",
+                right: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#6b7280",
+                pointerEvents: "none",
+                display: "grid",
+                placeItems: "center",
+              }}
+            >
+              <ChevronDown size={16} />
+            </span>
           </div>
         </div>
 
-        <div style={{ ...FIELD, width: 200 }}>
+        <div style={seedBox}>
           <div style={LABEL}>Seed</div>
           <div style={VALUE_ROW}>
             <input
@@ -271,86 +318,81 @@ export default function ControlsBar({
           </div>
         </div>
 
-        <div style={likesBox}>
+        <div style={likesBoxM}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={LABEL}>Likes</div>
+            <div style={LABEL}>Likes</div>
 
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "4px 8px",
-              border: "1px solid #e5e7eb",
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 800,
-              color: "#111827",
-              background: "#fff",
-            }}
-            title="Selected likes average"
-          >
-            <ThumbsUp size={14} />
-            <span>{likesText}</span>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 8px",
+                border: "1px solid #e5e7eb",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 800,
+                color: "#111827",
+                background: "#fff",
+              }}
+              title="Selected likes average"
+            >
+              <ThumbsUp size={14} />
+              <span>{likesText}</span>
+            </div>
           </div>
-        </div>
+
           <DotRow value={likesAvg} />
 
           <input
-          type="range"
-          min="0"
-          max="10"
-          step="0.1"
-          value={likesDraft}
-          onChange={(e) => {
-            const num = Number(e.target.value);
-            setLikesDraft(num);
-          }}
-          onMouseUp={() => {
-            setLikesAvg(likesDraft);
-            setExpandedId(null);
-          }}
-          onTouchEnd={() => {
-            setLikesAvg(likesDraft);
-            setExpandedId(null);
-          }}
-          onKeyUp={() => {
-            setLikesAvg(likesDraft);
-            setExpandedId(null);
-          }}
-          style={{
-            width: "100%",
-            cursor: "pointer",
-            accentColor: "#a855f7",   // фиолетовый как на скрине
-            marginTop: 6,
-          }}
-        />
-
+            type="range"
+            min="0"
+            max="10"
+            step="0.1"
+            value={likesDraft}
+            onChange={(e) => {
+              const num = Number(e.target.value);
+              setLikesDraft(num);
+            }}
+            onMouseUp={() => {
+              setLikesAvg(likesDraft);
+              setExpandedId(null);
+            }}
+            onTouchEnd={() => {
+              setLikesAvg(likesDraft);
+              setExpandedId(null);
+            }}
+            onKeyUp={() => {
+              setLikesAvg(likesDraft);
+              setExpandedId(null);
+            }}
+            style={{
+              width: "100%",
+              cursor: "pointer",
+              accentColor: "#a855f7",
+              marginTop: 6,
+            }}
+          />
         </div>
 
         {viewMode === "table" && (
-          <div style={{ ...FIELD, width: 150 }}>
+          <div style={pagerBox}>
             <div style={LABEL}>&nbsp;</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
               <button
                 type="button"
                 onClick={() => {
                   setExpandedId(null);
                   setPage((p) => Math.max(1, p - 1));
                 }}
-                style={{
-                  border: "1px solid #e5e7eb",
-                  background: "#fff",
-                  borderRadius: 10,
-                  height: 38,
-                  padding: "0 10px",
-                  cursor: "pointer",
-                }}
+                style={pagerBtn}
               >
                 Prev
               </button>
 
-              <div style={{ width: 26, textAlign: "center", fontWeight: 800, color: "#111827" }}>{page}</div>
+              <div style={{ width: 26, textAlign: "center", fontWeight: 800, color: "#111827" }}>
+                {page}
+              </div>
 
               <button
                 type="button"
@@ -358,14 +400,7 @@ export default function ControlsBar({
                   setExpandedId(null);
                   setPage((p) => p + 1);
                 }}
-                style={{
-                  border: "1px solid #e5e7eb",
-                  background: "#fff",
-                  borderRadius: 10,
-                  height: 38,
-                  padding: "0 10px",
-                  cursor: "pointer",
-                }}
+                style={pagerBtn}
               >
                 Next
               </button>
@@ -374,14 +409,14 @@ export default function ControlsBar({
         )}
       </div>
 
-      <div style={VIEW_WRAP}>
+      <div style={VIEW_WRAP_M}>
         <button
           type="button"
           onClick={() => {
             setViewMode("table");
             setExpandedId(null);
           }}
-          style={VIEW_BTN(viewMode === "table", true)}
+          style={VIEW_BTN_M(viewMode === "table", true)}
           title="Table"
           aria-label="Table"
         >
@@ -394,7 +429,7 @@ export default function ControlsBar({
             setViewMode("gallery");
             setExpandedId(null);
           }}
-          style={VIEW_BTN(viewMode === "gallery", false)}
+          style={VIEW_BTN_M(viewMode === "gallery", false)}
           title="Gallery"
           aria-label="Gallery"
         >
