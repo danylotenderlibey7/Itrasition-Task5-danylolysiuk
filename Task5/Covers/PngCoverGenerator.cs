@@ -43,6 +43,8 @@ namespace Task5.Covers
                 Path.Combine(baseDir, "Resources", "Fonts", "PlayfairDisplay-VariableFont_wght.ttf"),
                 Path.Combine(baseDir, "Resources", "Fonts", "MontserratAlternates-Regular.ttf"),
                 Path.Combine(baseDir, "Resources", "Fonts", "Kurale-Regular.ttf"),
+                Path.Combine(baseDir, "Resources", "Fonts", "PlaypenSans-Regular.ttf"),
+                Path.Combine(baseDir, "Resources", "Fonts", "RobotoSlab-Medium.ttf")
             };
 
             var fontCollection = new FontCollection();
