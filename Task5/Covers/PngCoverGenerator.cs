@@ -14,8 +14,7 @@ namespace Task5.Covers
         private const int W = 512;
         private const int H = 512;
 
-        public byte[] GenerateCover(
-            string songId, string locale, string songTitle, string artist, string? albumTitle)
+        public byte[] GenerateCover(string songId, string locale, string songTitle, string artist, string? albumTitle)
         {
             locale = string.IsNullOrWhiteSpace(locale) ? "en-US" : locale.Trim();
 
@@ -33,48 +32,141 @@ namespace Task5.Covers
                     : songTitle;
 
             using var image = new Image<Rgba32>(W, H);
-            ApplyRandomBackground(image, rnd);
-            var baseDir = AppContext.BaseDirectory;
+            var bg = MakeBackground(image, rnd);
 
+            var baseDir = AppContext.BaseDirectory;
             string[] fontPaths =
             {
-                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "PlaypenSans-Regular.ttf"),
                 System.IO.Path.Combine(baseDir, "Resources", "Fonts", "RobotoSlab-Medium.ttf"),
-                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "BadScript-Regular.ttf"),
-                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "Kurale-Regular.ttf"),
-                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "MontserratAlternates-Regular.ttf"),
-                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "Pacifico-Regular.ttf"),
                 System.IO.Path.Combine(baseDir, "Resources", "Fonts", "PlayfairDisplay-VariableFont_wght.ttf"),
-                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "RubikDoodleShadow-Regular.ttf"),
+                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "MontserratAlternates-Regular.ttf"),
+                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "Kurale-Regular.ttf"),
             };
-
 
             var fontCollection = new FontCollection();
             FontFamily family = fontCollection.Add(fontPaths[rnd.Next(fontPaths.Length)]);
 
-            Color textColor = rnd.NextDouble() < 0.20
-                ? Color.ParseHex("F1F5F9")
-                : Color.White;
-
-            string layout = PickWeighted(
-                rnd,
-                ("BottomStack", 30),
-                ("TopTitleBottomArtist", 22),
-                ("Centered", 18),
-                ("SplitLeft", 16),
-                ("SplitRight", 14));
+            string layout = PickWeighted(rnd,
+                ("CenterTop", 16),
+                ("CenterMiddle", 18),
+                ("CenterBottom", 16),
+                ("LeftTop", 16),
+                ("LeftMiddle", 18),
+                ("LeftBottom", 16));
 
             image.Mutate(ctx =>
             {
-                if (rnd.NextDouble() < 0.75)
-                    ApplyReadabilityOverlay(ctx, rnd);
-
-                DrawLayout(ctx, rnd, layout, mainTitle, artist, family, textColor);
+                DrawLayout(ctx, rnd, layout, mainTitle, artist, family, bg);
             });
 
             using var ms = new MemoryStream();
             image.SaveAsPng(ms);
             return ms.ToArray();
+        }
+
+        private sealed class BgInfo
+        {
+            public bool IsGradient { get; init; }
+            public Rgba32 Solid { get; init; }
+            public Rgba32 A { get; init; }
+            public Rgba32 B { get; init; }
+        }
+
+        private static BgInfo MakeBackground(Image<Rgba32> image, Random rnd)
+        {
+            var palette = new[]
+            {
+                "F59E0B","FB923C","F97316","F43F5E","EC4899",
+                "A855F7","8B5CF6","6366F1","3B82F6","06B6D4",
+                "14B8A6","22C55E","84CC16","EAB308",
+                "F1F5F9","E2E8F0"
+            };
+
+            bool gradient = rnd.NextDouble() < 0.55;
+
+            if (!gradient)
+            {
+                var c = Parse(palette[rnd.Next(palette.Length)]);
+                c = Lighten(c, 0.08f);
+                image.Mutate(ctx => ctx.Fill(c));
+                return new BgInfo { IsGradient = false, Solid = c };
+            }
+            else
+            {
+                var a = Parse(palette[rnd.Next(palette.Length)]);
+                var b = Parse(palette[rnd.Next(palette.Length)]);
+
+                a = Lighten(a, 0.10f);
+                b = Lighten(b, 0.10f);
+                b = Mix(b, a, 0.35f);
+
+                var start = new PointF(0, 0);
+                var end = rnd.NextDouble() < 0.5 ? new PointF(W, 0) : new PointF(0, H);
+
+                image.Mutate(ctx =>
+                {
+                    ctx.Fill(new LinearGradientBrush(
+                        start,
+                        end,
+                        GradientRepetitionMode.None,
+                        new ColorStop(0f, a),
+                        new ColorStop(1f, b)
+                    ));
+                });
+
+                return new BgInfo { IsGradient = true, A = a, B = b };
+            }
+        }
+
+        private static void DrawLayout(
+            IImageProcessingContext ctx,
+            Random rnd,
+            string layout,
+            string title,
+            string artist,
+            FontFamily family,
+            BgInfo bg)
+        {
+            float padX = 46f;
+            float padY = 46f;
+
+            bool center = layout.StartsWith("Center", StringComparison.OrdinalIgnoreCase);
+            var align = center ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+
+            float boxH = 220f;
+            float boxW = W - padX * 2;
+
+            float y = layout.EndsWith("Top", StringComparison.OrdinalIgnoreCase)
+                ? padY
+                : layout.EndsWith("Bottom", StringComparison.OrdinalIgnoreCase)
+                    ? (H - padY - boxH)
+                    : (H - boxH) * 0.5f;
+
+            var box = new RectangleF(padX, y, boxW, boxH);
+
+            float gap = 16f;
+            float artistH = 62f;
+
+            var titleBox = new RectangleF(box.X, box.Y, box.Width, Math.Max(60f, box.Height - artistH - gap));
+            var artistBox = new RectangleF(box.X, titleBox.Bottom + gap, box.Width, artistH);
+
+            var approxBg = bg.IsGradient ? Mix(bg.A, bg.B, 0.5f) : bg.Solid;
+            Color text = PickTextColor(approxBg);
+
+            float titleStart = rnd.Next(62, 78);
+            float artistStart = rnd.Next(28, 38);
+
+            FitTextInBox(ctx, family, title, titleStart, FontStyle.Bold, titleBox, text, align, 2, verticalCenter: center);
+            FitTextInBox(ctx, family, artist, artistStart, FontStyle.Regular, artistBox, text, align, 1, verticalCenter: center);
+        }
+
+        private static Color PickTextColor(Rgba32 bg)
+        {
+            float r = bg.R / 255f;
+            float g = bg.G / 255f;
+            float b = bg.B / 255f;
+            float luma = 0.2126f * r + 0.7152f * g + 0.0722f * b;
+            return luma > 0.62f ? Color.FromRgb(18, 18, 18) : Color.White;
         }
 
         private static string PickWeighted(Random rnd, params (string id, int w)[] items)
@@ -89,214 +181,6 @@ namespace Task5.Covers
                 if (roll < acc) return items[i].id;
             }
             return items[0].id;
-        }
-
-        private static void ApplyRandomBackground(Image<Rgba32> image, Random rnd)
-        {
-            var palette = new[]
-            {
-                "0F172A","1E3A8A","4F46E5","7C3AED","A855F7","D946EF",
-                "C026D3","DB2777","DC2626","C2410C","EA580C","F59E0B",
-                "CA8A04","65A30D","16A34A","0D9488","0891B2","0284C7",
-                "075985","4338CA","312E81","0B1320","EF4444","BE123C",
-                "F97316","D97706","059669","065F46","14B8A6","0891B2"
-            };
-
-            var c1 = Color.ParseHex(palette[rnd.Next(palette.Length)]);
-            var c2 = Color.ParseHex(palette[rnd.Next(palette.Length)]);
-            var c3 = Color.ParseHex(palette[rnd.Next(palette.Length)]);
-            if (c1 == c2) c2 = Color.ParseHex(palette[(Array.IndexOf(palette, palette[rnd.Next(palette.Length)]) + 1) % palette.Length]);
-
-            int type = rnd.Next(0, 5);
-
-            image.Mutate(ctx =>
-            {
-                switch (type)
-                {
-                    case 0:
-                        {
-                            var start = new PointF(rnd.NextSingle() * W, rnd.NextSingle() * H);
-                            var end = new PointF(rnd.NextSingle() * W, rnd.NextSingle() * H);
-                            ctx.Fill(new LinearGradientBrush(
-                                start,
-                                end,
-                                GradientRepetitionMode.None,
-                                new ColorStop(0f, c1),
-                                new ColorStop(rnd.NextSingle() * 0.6f + 0.2f, c2),
-                                new ColorStop(1f, c3)));
-                            break;
-                        }
-                    case 1:
-                        {
-                            var center = new PointF(rnd.NextSingle() * W, rnd.NextSingle() * H);
-                            float radius = (float)(Math.Min(W, H) * (0.4 + rnd.NextDouble() * 0.6));
-                            ctx.Fill(new RadialGradientBrush(
-                            center,
-                            radius,
-                            GradientRepetitionMode.None,
-                            new ColorStop(0f, c1),
-                            new ColorStop(0.7f, c2),
-                            new ColorStop(1f, c3)
-                        ));
-                            break;
-
-                        }
-                    case 2:
-                        {
-                            if (rnd.Next(0, 2) == 0)
-                            {
-                                ctx.Fill(c1, new RectangleF(0, 0, W * 0.5f, H));
-                                ctx.Fill(c2, new RectangleF(W * 0.5f, 0, W * 0.5f, H));
-                            }
-                            else
-                            {
-                                ctx.Fill(c1, new RectangleF(0, 0, W, H * 0.5f));
-                                ctx.Fill(c2, new RectangleF(0, H * 0.5f, W, H * 0.5f));
-                            }
-                            break;
-                        }
-                    case 3:
-                        {
-                            ctx.Fill(c1);
-                            break;
-                        }
-                    default:
-                        {
-                            ctx.Fill(new LinearGradientBrush(
-                                new PointF(0, 0),
-                                new PointF(W, H),
-                                GradientRepetitionMode.None,
-                                new ColorStop(0f, c2),
-                                new ColorStop(1f, c1)));
-                            break;
-                        }
-                }
-            });
-        }
-
-        private static void ApplyReadabilityOverlay(IImageProcessingContext ctx, Random rnd)
-        {
-            int kind = rnd.Next(0, 5);
-            if (kind == 0)
-            {
-                var o = new LinearGradientBrush(
-                    new PointF(0, H),
-                    new PointF(0, 0),
-                    GradientRepetitionMode.None,
-                    new ColorStop(0f, Color.FromRgba(0, 0, 0, 150)),
-                    new ColorStop(0.60f, Color.FromRgba(0, 0, 0, 0))
-                );
-                ctx.Fill(o);
-                return;
-            }
-            if (kind == 1)
-            {
-                var o = new LinearGradientBrush(
-                    new PointF(0, 0),
-                    new PointF(0, H),
-                    GradientRepetitionMode.None,
-                    new ColorStop(0f, Color.FromRgba(0, 0, 0, 125)),
-                    new ColorStop(0.52f, Color.FromRgba(0, 0, 0, 0)),
-                    new ColorStop(1f, Color.FromRgba(0, 0, 0, 105))
-                );
-                ctx.Fill(o);
-                return;
-            }
-            if (kind == 2)
-            {
-                var o = new LinearGradientBrush(
-                    new PointF(0, 0),
-                    new PointF(W, 0),
-                    GradientRepetitionMode.None,
-                    new ColorStop(0f, Color.FromRgba(0, 0, 0, 125)),
-                    new ColorStop(0.55f, Color.FromRgba(0, 0, 0, 0))
-                );
-                ctx.Fill(o);
-                return;
-            }
-            if (kind == 3)
-            {
-                var o = new LinearGradientBrush(
-                    new PointF(W, 0),
-                    new PointF(0, H),
-                    GradientRepetitionMode.None,
-                    new ColorStop(0f, Color.FromRgba(0, 0, 0, 95)),
-                    new ColorStop(0.50f, Color.FromRgba(0, 0, 0, 0)),
-                    new ColorStop(1f, Color.FromRgba(0, 0, 0, 115))
-                );
-                ctx.Fill(o);
-                return;
-            }
-            var o4 = new LinearGradientBrush(
-                new PointF(0, 0),
-                new PointF(W, H),
-                GradientRepetitionMode.None,
-                new ColorStop(0f, Color.FromRgba(0, 0, 0, 80)),
-                new ColorStop(0.55f, Color.FromRgba(0, 0, 0, 0)),
-                new ColorStop(1f, Color.FromRgba(0, 0, 0, 95))
-            );
-            ctx.Fill(o4);
-        }
-
-        private static void DrawLayout(
-            IImageProcessingContext ctx,
-            Random rnd,
-            string layout,
-            string title,
-            string artist,
-            FontFamily family,
-            Color textColor)
-        {
-            float pad = 36f;
-
-            var top = new RectangleF(pad, pad, W - pad * 2, H * 0.34f - pad);
-            var mid = new RectangleF(pad, H * 0.36f, W - pad * 2, H * 0.30f);
-            var bot = new RectangleF(pad, H * 0.70f, W - pad * 2, H * 0.30f - pad);
-
-            float titleStart = rnd.Next(40, 70);
-            float artistStart = rnd.Next(18, 32);
-
-            if (layout == "BottomStack")
-            {
-                var b1 = new RectangleF(bot.X, bot.Y, bot.Width, bot.Height * 0.64f);
-                var b2 = new RectangleF(bot.X, bot.Y + bot.Height * 0.64f, bot.Width, bot.Height * 0.36f);
-
-                FitTextInBox(ctx, family, title, titleStart, FontStyle.Bold, b1, textColor, HorizontalAlignment.Left, 3);
-                FitTextInBox(ctx, family, artist, artistStart, FontStyle.Regular, b2, textColor, HorizontalAlignment.Left, 1);
-                return;
-            }
-            if (layout == "TopTitleBottomArtist")
-            {
-                FitTextInBox(ctx, family, title, titleStart, FontStyle.Bold, top, textColor, HorizontalAlignment.Left, 3);
-                FitTextInBox(ctx, family, artist, artistStart, FontStyle.Regular, bot, textColor, HorizontalAlignment.Left, 2);
-                return;
-            }
-            if (layout == "Centered")
-            {
-                var c1 = new RectangleF(mid.X, mid.Y, mid.Width, mid.Height * 0.64f);
-                var c2 = new RectangleF(mid.X, mid.Y + mid.Height * 0.64f, mid.Width, mid.Height * 0.36f);
-
-                FitTextInBox(ctx, family, title, titleStart, FontStyle.Bold, c1, textColor, HorizontalAlignment.Center, 3);
-                FitTextInBox(ctx, family, artist, artistStart, FontStyle.Regular, c2, textColor, HorizontalAlignment.Center, 2);
-                return;
-            }
-            if (layout == "SplitLeft")
-            {
-                var t = new RectangleF(pad, H * 0.16f, W * 0.66f - pad, H * 0.36f);
-                var a = new RectangleF(pad, H * 0.72f, W * 0.66f - pad, H * 0.20f);
-
-                FitTextInBox(ctx, family, title, titleStart, FontStyle.Bold, t, textColor, HorizontalAlignment.Left, 3);
-                FitTextInBox(ctx, family, artist, artistStart, FontStyle.Regular, a, textColor, HorizontalAlignment.Left, 1);
-                return;
-            }
-            if (layout == "SplitRight")
-            {
-                var t = new RectangleF(W * 0.34f, H * 0.16f, W * 0.66f - pad, H * 0.36f);
-                var a = new RectangleF(W * 0.34f, H * 0.72f, W * 0.66f - pad, H * 0.20f);
-
-                FitTextInBox(ctx, family, title, titleStart, FontStyle.Bold, t, textColor, HorizontalAlignment.Right, 3);
-                FitTextInBox(ctx, family, artist, artistStart, FontStyle.Regular, a, textColor, HorizontalAlignment.Right, 1);
-            }
         }
 
         private static float OriginX(RectangleF box, HorizontalAlignment align) =>
@@ -316,16 +200,17 @@ namespace Task5.Covers
             RectangleF box,
             Color color,
             HorizontalAlignment align,
-            int maxLines)
+            int maxLines,
+            bool verticalCenter)
         {
             text = (text ?? "").Trim();
             if (text.Length == 0) return;
 
             float size = startSize;
             const float minSize = 14f;
-            string candidate = text;
 
             RichTextOptions opt = default;
+            string candidate = text;
 
             while (size >= minSize)
             {
@@ -338,9 +223,11 @@ namespace Task5.Covers
                     VerticalAlignment = VerticalAlignment.Top
                 };
 
-                var measured = TextMeasurer.MeasureSize(candidate, opt);
-                float lineHeight = font.Size * 1.15f;
+                float lineHeight = font.Size * 1.18f;
                 float maxHeight = Math.Min(box.Height, lineHeight * maxLines);
+
+                candidate = TruncateToFitHeight(text, opt, maxHeight);
+                var measured = TextMeasurer.MeasureSize(candidate, opt);
 
                 if (measured.Width <= box.Width + 0.5f && measured.Height <= maxHeight + 0.5f)
                     break;
@@ -357,12 +244,23 @@ namespace Task5.Covers
                 VerticalAlignment = VerticalAlignment.Top
             };
 
-            float allowedHeight = Math.Min(box.Height, finalFont.Size * 1.15f * maxLines);
-            candidate = TruncateToFitHeight(candidate, opt, allowedHeight);
+            float allowedHeight = Math.Min(box.Height, finalFont.Size * 1.18f * maxLines);
+            candidate = TruncateToFitHeight(text, opt, allowedHeight);
 
-            var shadow = Color.FromRgba(0, 0, 0, 140);
+            var measuredFinal = TextMeasurer.MeasureSize(candidate, opt);
+
+            float y = box.Y;
+            if (verticalCenter)
+                y = box.Y + Math.Max(0f, (box.Height - measuredFinal.Height) * 0.5f);
+
+            opt.Origin = new PointF(OriginX(box, align), y);
+
+            var shadow = (color == Color.White)
+                ? Color.FromRgba(0, 0, 0, 200)
+                : Color.FromRgba(255, 255, 255, 170);
+
             var shadowOpt = opt;
-            shadowOpt.Origin = new PointF(opt.Origin.X + 2, opt.Origin.Y + 2);
+            shadowOpt.Origin = new PointF(opt.Origin.X + 2.5f, opt.Origin.Y + 2.5f);
 
             ctx.DrawText(shadowOpt, candidate, shadow);
             ctx.DrawText(opt, candidate, color);
@@ -385,6 +283,26 @@ namespace Task5.Covers
                     hi = mid;
             }
             return text.Substring(0, lo).TrimEnd();
+        }
+
+        private static Rgba32 Parse(string hex) => Color.ParseHex(hex).ToPixel<Rgba32>();
+
+        private static Rgba32 Mix(Rgba32 a, Rgba32 b, float t)
+        {
+            t = Math.Clamp(t, 0f, 1f);
+            byte r = (byte)Math.Clamp(a.R + (b.R - a.R) * t, 0, 255);
+            byte g = (byte)Math.Clamp(a.G + (b.G - a.G) * t, 0, 255);
+            byte bl = (byte)Math.Clamp(a.B + (b.B - a.B) * t, 0, 255);
+            return new Rgba32(r, g, bl, 255);
+        }
+
+        private static Rgba32 Lighten(Rgba32 c, float amount)
+        {
+            amount = Math.Clamp(amount, 0f, 1f);
+            byte r = (byte)Math.Clamp(c.R + (255 - c.R) * amount, 0, 255);
+            byte g = (byte)Math.Clamp(c.G + (255 - c.G) * amount, 0, 255);
+            byte b = (byte)Math.Clamp(c.B + (255 - c.B) * amount, 0, 255);
+            return new Rgba32(r, g, b, 255);
         }
     }
 }
