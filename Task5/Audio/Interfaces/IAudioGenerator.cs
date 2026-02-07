@@ -2,6 +2,6 @@
 {
     public interface IAudioGenerator
     {
-        byte[] GeneratePreviewWav(string songId, string locale, int durationSeconds = 6);
+        byte[] GeneratePreviewWav(string songId, string locale, int durationSeconds = 30);
     }
 }

@@ -1,35 +1,53 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import SongsTable from "./components/SongsTable.jsx";
+import SongsGallery from "./components/SongsGallery.jsx";
+import { getSongs } from "./api/songsApi";
+import ControlsBar from "./components/ControlsBar.jsx";
+
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [songs, setSongs] = useState([]);
+  const [error, setError] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+
+  const [seed, setSeed] = useState(1);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [locale, setLocale] = useState("en-US");
+  const [likesAvg, setLikesAvg] = useState(5);
+  const [viewMode, setViewMode] = useState("table");
+
+useEffect(() => {
+    setError(null);
+
+  getSongs({seed, page, pageSize, locale, likesAvg})
+  .then(data => setSongs(data.songs))
+  .catch(err=>{setError(err.message);
+});
+}, [seed, page, pageSize, locale, likesAvg]);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div style={{ padding: 20 }}>
+      <h1>Task5 Songs</h1>
+      <ControlsBar page={page} setPage={setPage} locale={locale} setLocale={setLocale} seed={seed} setSeed={setSeed} 
+      likesAvg={likesAvg} setLikesAvg={setLikesAvg} setExpandedId={setExpandedId} 
+      viewMode={viewMode} setViewMode={setViewMode}/>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      {viewMode === "table" && (
+          <SongsTable
+            songs={songs}
+            expandedId={expandedId}
+            setExpandedId={setExpandedId}
+            locale={locale}
+          />
+        )}
+
+        {viewMode === "gallery" && (
+          <SongsGallery locale={locale} seed={seed} likesAvg={likesAvg} pageSize={20}/>
+        )}
+    </div>
+  );
 }
 
-export default App
+export default App;

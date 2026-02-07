@@ -17,7 +17,7 @@ namespace Task5.Controllers
         public IActionResult GetSongAudio([FromRoute] string songId, [FromQuery] string? locale)
         {
             var bytes = _audioGenerator.GeneratePreviewWav(songId, locale ?? "en-US");
-            return File(bytes,"audio/wav");
+            return File(bytes,"audio/wav", enableRangeProcessing: true);
         }
     }
 }
