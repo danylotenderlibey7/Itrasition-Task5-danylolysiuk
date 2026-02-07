@@ -81,7 +81,7 @@ export default function SongsGallery({ seed, locale, likesAvg, pageSize = 20 }) 
   }, [gallerySongs, isLoading, hasMore]);
 
   return (
-    <div style={{ paddingTop: 8, paddingLeft: cols === 1 ? 6 : 0, paddingRight: cols === 1 ? 6 : 0 }}>
+    <div style={{ paddingTop: 8 }}>
       <div
         style={{
           display: "grid",
@@ -93,7 +93,7 @@ export default function SongsGallery({ seed, locale, likesAvg, pageSize = 20 }) 
           const isLast = index === gallerySongs.length - 1;
 
           const coverUrl = `/api/songs/${song.id}/cover?locale=${encodeURIComponent(locale)}`;
-
+          
           return (
             <div
               key={song.id}
@@ -119,11 +119,11 @@ export default function SongsGallery({ seed, locale, likesAvg, pageSize = 20 }) 
                 src={coverUrl}
                 alt={song.songTitle}
                 style={{
-                width: "100%",
-                height: cols === 1 ? 260 : 360,
-                objectFit: "cover",
-                display: "block",
-              }}
+                  width: "100%",
+                  height: 360,
+                  objectFit: "cover",
+                  display: "block",
+                }}
               />
 
               <div style={{ padding: "10px 12px" }}>
