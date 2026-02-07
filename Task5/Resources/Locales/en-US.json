@@ -125,10 +125,12 @@
     "{Adjective} — {Noun}",
     "After the {Noun}",
     "Before the {Noun}",
+    "{Adjective} {Noun}",
     "Into the {Noun}",
     "{Noun} / {Noun}",
     "{Noun} (Remix)",
     "{Noun} (Acoustic)",
+    "{Adjective} {Noun}",
     "{Noun} (Live)",
     "{Adjective} {Noun} (Version)"
   ],

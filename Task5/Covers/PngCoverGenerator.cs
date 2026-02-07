@@ -1,4 +1,8 @@
-﻿using SixLabors.Fonts;
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Text;
+using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
@@ -6,6 +10,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Task5.Covers.Interfaces;
 using Task5.Determinism;
+using Path = System.IO.Path;
 
 namespace Task5.Covers
 {
@@ -24,12 +29,9 @@ namespace Task5.Covers
             int detSeed = DeterministicSeed.MakeDetSeed(seed, index, locale);
             var rnd = new Random(detSeed);
 
+            songTitle = (songTitle ?? "").Trim();
+            artist = (artist ?? "").Trim();
             albumTitle = string.IsNullOrWhiteSpace(albumTitle) ? null : albumTitle.Trim();
-            string mainTitle =
-                !string.IsNullOrWhiteSpace(albumTitle) &&
-                !string.Equals(albumTitle, "Single", StringComparison.OrdinalIgnoreCase)
-                    ? albumTitle
-                    : songTitle;
 
             using var image = new Image<Rgba32>(W, H);
             var bg = MakeBackground(image, rnd);
@@ -37,26 +39,26 @@ namespace Task5.Covers
             var baseDir = AppContext.BaseDirectory;
             string[] fontPaths =
             {
-                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "RobotoSlab-Medium.ttf"),
-                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "PlayfairDisplay-VariableFont_wght.ttf"),
-                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "MontserratAlternates-Regular.ttf"),
-                System.IO.Path.Combine(baseDir, "Resources", "Fonts", "Kurale-Regular.ttf"),
+                Path.Combine(baseDir, "Resources", "Fonts", "RobotoSlab-Medium.ttf"),
+                Path.Combine(baseDir, "Resources", "Fonts", "PlayfairDisplay-VariableFont_wght.ttf"),
+                Path.Combine(baseDir, "Resources", "Fonts", "MontserratAlternates-Regular.ttf"),
+                Path.Combine(baseDir, "Resources", "Fonts", "Kurale-Regular.ttf"),
             };
 
             var fontCollection = new FontCollection();
             FontFamily family = fontCollection.Add(fontPaths[rnd.Next(fontPaths.Length)]);
 
             string layout = PickWeighted(rnd,
+                ("CenterMid", 22),
                 ("CenterTop", 16),
-                ("CenterMiddle", 18),
                 ("CenterBottom", 16),
-                ("LeftTop", 16),
-                ("LeftMiddle", 18),
-                ("LeftBottom", 16));
+                ("LeftMid", 18),
+                ("LeftTop", 14),
+                ("LeftBottom", 14));
 
             image.Mutate(ctx =>
             {
-                DrawLayout(ctx, rnd, layout, mainTitle, artist, family, bg);
+                DrawLayoutWithFallback(ctx, rnd, layout, songTitle, artist, albumTitle, family, bg);
             });
 
             using var ms = new MemoryStream();
@@ -87,7 +89,7 @@ namespace Task5.Covers
             if (!gradient)
             {
                 var c = Parse(palette[rnd.Next(palette.Length)]);
-                c = Lighten(c, 0.08f);
+                c = Lighten(c, 0.10f);
                 image.Mutate(ctx => ctx.Fill(c));
                 return new BgInfo { IsGradient = false, Solid = c };
             }
@@ -96,9 +98,9 @@ namespace Task5.Covers
                 var a = Parse(palette[rnd.Next(palette.Length)]);
                 var b = Parse(palette[rnd.Next(palette.Length)]);
 
-                a = Lighten(a, 0.10f);
-                b = Lighten(b, 0.10f);
-                b = Mix(b, a, 0.35f);
+                a = Lighten(a, 0.12f);
+                b = Lighten(b, 0.12f);
+                b = Mix(b, a, 0.38f);
 
                 var start = new PointF(0, 0);
                 var end = rnd.NextDouble() < 0.5 ? new PointF(W, 0) : new PointF(0, H);
@@ -118,80 +120,114 @@ namespace Task5.Covers
             }
         }
 
-        private static void DrawLayout(
+        private static void DrawLayoutWithFallback(
             IImageProcessingContext ctx,
             Random rnd,
             string layout,
-            string title,
+            string songTitle,
             string artist,
+            string? albumTitle,
             FontFamily family,
             BgInfo bg)
         {
-            float padX = 46f;
-            float padY = 46f;
+            float pad = 44f;
 
             bool center = layout.StartsWith("Center", StringComparison.OrdinalIgnoreCase);
-            var align = center ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+            bool top = layout.EndsWith("Top", StringComparison.OrdinalIgnoreCase);
+            bool bottom = layout.EndsWith("Bottom", StringComparison.OrdinalIgnoreCase);
 
-            float boxH = 220f;
-            float boxW = W - padX * 2;
+            HorizontalAlignment align = center ? HorizontalAlignment.Center : HorizontalAlignment.Left;
 
-            float y = layout.EndsWith("Top", StringComparison.OrdinalIgnoreCase)
-                ? padY
-                : layout.EndsWith("Bottom", StringComparison.OrdinalIgnoreCase)
-                    ? (H - padY - boxH)
-                    : (H - boxH) * 0.5f;
-
-            var box = new RectangleF(padX, y, boxW, boxH);
+            RectangleF box =
+                top ? new RectangleF(pad, 48f, W - pad * 2, H * 0.40f) :
+                bottom ? new RectangleF(pad, H * 0.58f, W - pad * 2, H * 0.34f) :
+                new RectangleF(pad, H * 0.32f, W - pad * 2, H * 0.40f);
 
             float gap = 16f;
-            float artistH = 62f;
-
-            var titleBox = new RectangleF(box.X, box.Y, box.Width, Math.Max(60f, box.Height - artistH - gap));
-            var artistBox = new RectangleF(box.X, titleBox.Bottom + gap, box.Width, artistH);
+            var titleBox = new RectangleF(box.X, box.Y, box.Width, box.Height * 0.62f);
+            var artistBox = new RectangleF(box.X, titleBox.Bottom + gap, box.Width, box.Bottom - (titleBox.Bottom + gap));
 
             var approxBg = bg.IsGradient ? Mix(bg.A, bg.B, 0.5f) : bg.Solid;
-            Color text = PickTextColor(approxBg);
+            Color textColor = PickTextColor(approxBg);
 
-            float titleStart = rnd.Next(62, 78);
-            float artistStart = rnd.Next(28, 38);
+            float titleStart = rnd.Next(56, 70);
+            float artistStart = rnd.Next(24, 34);
 
-            FitTextInBox(ctx, family, title, titleStart, FontStyle.Bold, titleBox, text, align, 2, verticalCenter: center);
-            FitTextInBox(ctx, family, artist, artistStart, FontStyle.Regular, artistBox, text, align, 1, verticalCenter: center);
+            string titleToDraw = PickBestTitleNoTruncate(family, songTitle, albumTitle, titleBox, align, titleStart, maxLines: 3);
+
+            DrawTextNoTruncate(ctx, family, titleToDraw, titleStart, FontStyle.Bold, titleBox, textColor, align, 3);
+
+            if (!string.IsNullOrWhiteSpace(artist))
+                DrawTextNoTruncate(ctx, family, artist, artistStart, FontStyle.Regular, artistBox, textColor, align, 1);
         }
 
-        private static Color PickTextColor(Rgba32 bg)
+        private static string PickBestTitleNoTruncate(
+            FontFamily family,
+            string songTitle,
+            string? albumTitle,
+            RectangleF box,
+            HorizontalAlignment align,
+            float startSize,
+            int maxLines)
         {
-            float r = bg.R / 255f;
-            float g = bg.G / 255f;
-            float b = bg.B / 255f;
-            float luma = 0.2126f * r + 0.7152f * g + 0.0722f * b;
-            return luma > 0.62f ? Color.FromRgb(18, 18, 18) : Color.White;
+            string s1 = (songTitle ?? "").Trim();
+            string s2 = (!string.IsNullOrWhiteSpace(albumTitle) && !string.Equals(albumTitle, "Single", StringComparison.OrdinalIgnoreCase))
+                ? albumTitle.Trim()
+                : "";
+
+            if (CanFitNoTruncate(family, s1, startSize, FontStyle.Bold, box, align, maxLines))
+                return s1;
+
+            if (!string.IsNullOrWhiteSpace(s2) && CanFitNoTruncate(family, s2, startSize, FontStyle.Bold, box, align, maxLines))
+                return s2;
+
+            string abbr = MakeAbbreviation(s1);
+            if (CanFitNoTruncate(family, abbr, startSize, FontStyle.Bold, box, align, maxLines))
+                return abbr;
+
+            return abbr;
         }
 
-        private static string PickWeighted(Random rnd, params (string id, int w)[] items)
+        private static bool CanFitNoTruncate(
+            FontFamily family,
+            string text,
+            float startSize,
+            FontStyle style,
+            RectangleF box,
+            HorizontalAlignment align,
+            int maxLines)
         {
-            int sum = 0;
-            for (int i = 0; i < items.Length; i++) sum += items[i].w;
-            int roll = rnd.Next(0, sum);
-            int acc = 0;
-            for (int i = 0; i < items.Length; i++)
+            text = (text ?? "").Trim();
+            if (text.Length == 0) return true;
+
+            const float minSize = 14f;
+            float size = startSize;
+
+            while (size >= minSize)
             {
-                acc += items[i].w;
-                if (roll < acc) return items[i].id;
+                Font font = family.CreateFont(size, style);
+                var opt = new RichTextOptions(font)
+                {
+                    Origin = new PointF(OriginX(box, align), box.Y),
+                    WrappingLength = box.Width,
+                    HorizontalAlignment = align,
+                    VerticalAlignment = VerticalAlignment.Top
+                };
+
+                var measured = TextMeasurer.MeasureSize(text, opt);
+                float lineHeight = font.Size * 1.15f;
+                float maxHeight = Math.Min(box.Height, lineHeight * maxLines);
+
+                if (measured.Width <= box.Width + 0.5f && measured.Height <= maxHeight + 0.5f)
+                    return true;
+
+                size -= 2f;
             }
-            return items[0].id;
+
+            return false;
         }
 
-        private static float OriginX(RectangleF box, HorizontalAlignment align) =>
-            align switch
-            {
-                HorizontalAlignment.Center => box.X + box.Width * 0.5f,
-                HorizontalAlignment.Right => box.Right,
-                _ => box.X
-            };
-
-        private static void FitTextInBox(
+        private static void DrawTextNoTruncate(
             IImageProcessingContext ctx,
             FontFamily family,
             string text,
@@ -200,17 +236,14 @@ namespace Task5.Covers
             RectangleF box,
             Color color,
             HorizontalAlignment align,
-            int maxLines,
-            bool verticalCenter)
+            int maxLines)
         {
             text = (text ?? "").Trim();
             if (text.Length == 0) return;
 
-            float size = startSize;
             const float minSize = 14f;
-
+            float size = startSize;
             RichTextOptions opt = default;
-            string candidate = text;
 
             while (size >= minSize)
             {
@@ -223,11 +256,9 @@ namespace Task5.Covers
                     VerticalAlignment = VerticalAlignment.Top
                 };
 
-                float lineHeight = font.Size * 1.18f;
+                var measured = TextMeasurer.MeasureSize(text, opt);
+                float lineHeight = font.Size * 1.15f;
                 float maxHeight = Math.Min(box.Height, lineHeight * maxLines);
-
-                candidate = TruncateToFitHeight(text, opt, maxHeight);
-                var measured = TextMeasurer.MeasureSize(candidate, opt);
 
                 if (measured.Width <= box.Width + 0.5f && measured.Height <= maxHeight + 0.5f)
                     break;
@@ -244,45 +275,100 @@ namespace Task5.Covers
                 VerticalAlignment = VerticalAlignment.Top
             };
 
-            float allowedHeight = Math.Min(box.Height, finalFont.Size * 1.18f * maxLines);
-            candidate = TruncateToFitHeight(text, opt, allowedHeight);
-
-            var measuredFinal = TextMeasurer.MeasureSize(candidate, opt);
-
-            float y = box.Y;
-            if (verticalCenter)
-                y = box.Y + Math.Max(0f, (box.Height - measuredFinal.Height) * 0.5f);
-
-            opt.Origin = new PointF(OriginX(box, align), y);
-
             var shadow = (color == Color.White)
-                ? Color.FromRgba(0, 0, 0, 200)
-                : Color.FromRgba(255, 255, 255, 170);
+                ? Color.FromRgba(0, 0, 0, 180)
+                : Color.FromRgba(255, 255, 255, 150);
 
             var shadowOpt = opt;
-            shadowOpt.Origin = new PointF(opt.Origin.X + 2.5f, opt.Origin.Y + 2.5f);
+            shadowOpt.Origin = new PointF(opt.Origin.X + 2, opt.Origin.Y + 2);
 
-            ctx.DrawText(shadowOpt, candidate, shadow);
-            ctx.DrawText(opt, candidate, color);
+            ctx.DrawText(shadowOpt, text, shadow);
+            ctx.DrawText(opt, text, color);
         }
 
-        private static string TruncateToFitHeight(string text, RichTextOptions opt, float maxHeight)
+        private static string MakeAbbreviation(string title)
         {
-            if (TextMeasurer.MeasureSize(text, opt).Height <= maxHeight)
-                return text;
+            title = (title ?? "").Trim();
+            if (title.Length == 0) return "—";
 
-            int lo = 0;
-            int hi = text.Length;
-            while (lo + 1 < hi)
+            int paren = title.IndexOf('(');
+            if (paren > 0) title = title.Substring(0, paren).Trim();
+
+            var tokens = title
+                .Split(new[] { ' ', '\t', '-', '—', '/', '\\', ':', ';', ',', '.', '!', '?', '[', ']', '{', '}', '"' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => t.Trim())
+                .Where(t => t.Length > 0)
+                .ToArray();
+
+            if (tokens.Length == 0) return "—";
+            if (tokens.Length == 1)
             {
-                int mid = (lo + hi) / 2;
-                string t = text.Substring(0, mid).TrimEnd();
-                if (TextMeasurer.MeasureSize(t, opt).Height <= maxHeight)
-                    lo = mid;
-                else
-                    hi = mid;
+                string one = tokens[0];
+                if (one.Length <= 10) return one.ToUpperInvariant();
+                return one.Substring(0, 10).ToUpperInvariant();
             }
-            return text.Substring(0, lo).TrimEnd();
+
+            string[] stop =
+            {
+                "the","a","an","of","and","or","to","in","on","at","for","from","into","over","under","between","within"
+            };
+
+            var sb = new StringBuilder();
+            foreach (var t in tokens)
+            {
+                var low = t.ToLowerInvariant();
+                if (stop.Contains(low)) continue;
+
+                char c = t[0];
+                if (char.IsLetterOrDigit(c))
+                    sb.Append(char.ToUpperInvariant(c));
+
+                if (sb.Length >= 6) break;
+            }
+
+            if (sb.Length == 0)
+            {
+                foreach (var t in tokens.Take(6))
+                {
+                    char c = t[0];
+                    if (char.IsLetterOrDigit(c))
+                        sb.Append(char.ToUpperInvariant(c));
+                    if (sb.Length >= 6) break;
+                }
+            }
+
+            return sb.Length == 0 ? "—" : sb.ToString();
+        }
+
+        private static Color PickTextColor(Rgba32 bg)
+        {
+            float r = bg.R / 255f;
+            float g = bg.G / 255f;
+            float b = bg.B / 255f;
+            float luma = 0.2126f * r + 0.7152f * g + 0.0722f * b;
+            return luma > 0.62f ? Color.FromRgb(18, 18, 18) : Color.White;
+        }
+
+        private static float OriginX(RectangleF box, HorizontalAlignment align) =>
+            align switch
+            {
+                HorizontalAlignment.Center => box.X + box.Width * 0.5f,
+                HorizontalAlignment.Right => box.Right,
+                _ => box.X
+            };
+
+        private static string PickWeighted(Random rnd, params (string id, int w)[] items)
+        {
+            int sum = 0;
+            for (int i = 0; i < items.Length; i++) sum += items[i].w;
+            int roll = rnd.Next(0, sum);
+            int acc = 0;
+            for (int i = 0; i < items.Length; i++)
+            {
+                acc += items[i].w;
+                if (roll < acc) return items[i].id;
+            }
+            return items[0].id;
         }
 
         private static Rgba32 Parse(string hex) => Color.ParseHex(hex).ToPixel<Rgba32>();
